@@ -13,8 +13,8 @@ Currently only works with Chrome, but since the project uses Puppeteer/Chrome De
 
 
 ## Issues/Limitations/To Do List
-* Code has hardcoded refs to start chrome, powershell and iisexpress. These need to be put in test config file (runsettings.xml)
-* Need to check all runtime dependencies are present on a clean VM (both Windows 7 and Windows 10), as desktop PC already VSIX SDK installed and this may be a runtime dependency
-* Only tested on VS2017, not tested on VS2019 (manifest allows installation on VS2019)
-* Needs to be signed and packaged for Nuget
-* Code currently runs all test scripts in an asynchronous fashion in separate instances of Chrome, but it would probably be faster to use a single Chrome instance as it takes some time to start and stop the Chrome process
+- [ ] Code has hardcoded refs to start chrome, powershell and iisexpress. These need to be put in XML config file (.runsettings)
+- [ ] Need to check all runtime dependencies are present on a clean VM (both Windows 7 and Windows 10), as desktop PC already VSIX SDK installed and this may be a runtime dependency
+- [ ] Only tested on VS2017, not tested on VS2019 (manifest allows installation on VS2019)
+- [ ] Needs to be signed and packaged for Nuget
+- [ ] Code currently runs all test scripts in an asynchronous fashion in separate instances of Chrome, but it would probably be faster to use a single Chrome instance as it takes some time to start and stop the Chrome process
