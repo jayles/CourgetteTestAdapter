@@ -6,7 +6,7 @@ This plugin allows unit tests to be run from within Visual Studio. In normal tes
 Currently only works with Chrome, but since the project uses Puppeteer/Chrome DevTools Protocol (CDP), it will aim to have the following  browser support:
 * Chome
 * Chromium
-* Edge 76+ (new version of Microsoft Edge based on Chromium due to be released in Jan 2020)
+* Edge 76+ (new version of Microsoft Edge based on Chromium due to be released on 15 January 2020)
 * Firefox
 * Opera
 * Not supported (Safari). The latest version of Safari available for Windows is version 5.1.7 (from 2012), so you cannot do any meaningful testing of Safari on Windows.
