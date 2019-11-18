@@ -1,5 +1,5 @@
 # CourgetteTestAdapter
-This is the Courgette Test Adapter .vsix plugin project for use with the Courgette-ts TypeScrtip testing framework.
+This is the Courgette Test Adapter .vsix plugin project for use with the Courgette-ts TypeScript testing framework.
 
 This plugin allows unit tests to be run from within Visual Studio. In normal test run mode an instance of headless Chrome is started and the tests are run inside Chrome. Once completed Chrome posts the test results back to Visual Studio and the IDE is updated with the test results. Tests can also be run in Debug mode where a visible instance of Chrome is started and left running on the desktop, which allows the user to debug their unit tests.
 
