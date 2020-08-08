@@ -67,11 +67,12 @@ namespace CourgetteTestAdapter
 		private async Task<string> GetRequestContentAsync(HttpListenerRequest request)
 		{
 			long length64 = request.ContentLength64;
+			string clientIP = request.RemoteEndPoint.ToString();
 
 			using (var reader = new StreamReader(request.InputStream, request.ContentEncoding))
 			{
 				string content = await reader.ReadToEndAsync().ConfigureAwait(false);
-				Log($"Unit tests results received from browser, length read = {content.Length}, ContentLength64 = {length64}");
+				Log($"Test results received from browser, length read = {content.Length}, ContentLength64 = {length64}, clientIP={clientIP}");
 				return content;
 			}
 		}
@@ -84,7 +85,10 @@ namespace CourgetteTestAdapter
 			HttpListenerRequest request = context.Request;
 			HttpListenerResponse response = context.Response;
 
-			string content = null;
+			// get content of received request
+			string content = await GetRequestContentAsync(request).ConfigureAwait(false);
+
+			// send appropriate response
 			if (request.HttpMethod == "OPTIONS")
 			{
 				// if we receive OPTIONS, send correct CORS headers back
@@ -95,10 +99,7 @@ namespace CourgetteTestAdapter
 			}
 			else
 			{
-				// get content of received request
-				content = await GetRequestContentAsync(request).ConfigureAwait(false);
-
-				// and send 204 response
+				// send 204 response
 				SendOkResponse(response);
 			}
 

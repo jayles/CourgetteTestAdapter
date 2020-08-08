@@ -97,13 +97,14 @@ namespace CourgetteTestAdapter
 					Log($"About to send CDP cmd {msg.method} to port {_chromeDebuggingPort}...");
 					await ws.SendAsync(sendBuffer, WebSocketMessageType.Text, true, cancellationToken).ConfigureAwait(false);
 					WebSocketReceiveResult result = await ws.ReceiveAsync(receiveBuffer, cancellationToken).ConfigureAwait(false);
-					Log($"...received CDP result for cmd {msg.method}, result = {Json.Serialize(result)}");
+					Log($"...received CDP result for cmd {msg.method}, result = {Json.Serialize(result)}, port is {_chromeDebuggingPort}");
 
 					// retrive result from buffer
 					if (result.MessageType != WebSocketMessageType.Text)
 						return $"Unexpected message type: {result.MessageType}";
 
 					string msgText = Encoding.UTF8.GetString(receiveBytes, 0, result.Count);
+					Log($"{msg.method}(): returned result {msgText}, port is {_chromeDebuggingPort}");
 
 					return msgText;
 				}

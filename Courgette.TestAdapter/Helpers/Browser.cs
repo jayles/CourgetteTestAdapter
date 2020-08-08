@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Net.WebSockets;
 using System.Threading.Tasks;
 using static CourgetteTestAdapter.Logger;
+
+// from nuget Microsoft.TestPlatform.ObjectModel
+using Microsoft.VisualStudio.TestPlatform.ObjectModel.Adapter;
 
 namespace CourgetteTestAdapter
 {
@@ -12,11 +14,13 @@ namespace CourgetteTestAdapter
 		private static ushort _chromeDebuggingPortCounter = 9222;
 
 		private ushort _chromeDebuggingPort;
+		private IRunContext _runContext;
 		private string _wwwroot;
 		private string _testFileUrl;
 
-		public Browser(string wwwroot, string testFileUrl)
+		public Browser(IRunContext runContext, string wwwroot, string testFileUrl)
 		{
+			_runContext = runContext;
 			_wwwroot = wwwroot;
 			_testFileUrl = testFileUrl;
 
@@ -29,16 +33,10 @@ namespace CourgetteTestAdapter
 
 		public static void LaunchIISExpress(string iisConfigFile)
 		{
+			// TODO: should get these from XML config file
 			const string powerShellExe = @"C:\Windows\System32\WindowsPowerShell\v1.0\PowerShell.exe";
 			const string iisExePath = @"C:\Program Files\IIS Express\iisexpress.exe";
 			string iisArgs = $"/config:{iisConfigFile}";
-
-			//Process[] processes = Process.GetProcessesByName("iisexpress");
-			//if (processes.Length == 0)
-			//{
-			//	string args = $"/config:{iisConfigFile}";
-			//	var process = Process.Start(@"C:\Program Files\IIS Express\iisexpress.exe", args);
-			//}
 
 			// use PowerShell so console window can be hidden
 			//	PowerShell -Command "Start-Process -FilePath '...' -ArgumentList ..."
@@ -70,7 +68,11 @@ namespace CourgetteTestAdapter
 
 			// --remote-debugging-port option keeps chrome open until we close it
 			//string args = $"--user-data-dir={Logger.LogPath}{_chromeDebuggingPort} --enable-automation --disable-extensions --no-sandbox --disable-gpu --remote-debugging-port={_chromeDebuggingPort}";
-			string args = $"--user-data-dir={Logger.LogPath}{_chromeDebuggingPort} --enable-automation --disable-extensions --no-sandbox --headless --disable-gpu --remote-debugging-port={_chromeDebuggingPort}";
+			string args;
+			if (_runContext.IsBeingDebugged)
+				args = $"--user-data-dir={Logger.LogPath}{_chromeDebuggingPort} --remote-debugging-port={_chromeDebuggingPort}";
+			else
+				args = $"--user-data-dir={Logger.LogPath}{_chromeDebuggingPort} --enable-automation --disable-extensions --no-sandbox --headless --disable-gpu --remote-debugging-port={_chromeDebuggingPort}";
 			Log($"Chrome cmd line args are : {args}");
 
 			// start chrome with no initial URL specified
@@ -92,7 +94,13 @@ namespace CourgetteTestAdapter
 
 		public async Task CloseAsync()
 		{
-			Log("CloseAsync(): Attempting to close browser...");
+			if (_runContext.IsBeingDebugged)
+			{
+				Log("CloseAsync(): Debug mode detected, leaving browser open");
+				return;
+			}
+			else
+				Log("CloseAsync(): Attempting to close browser...");
 
 			// note you can't use any of the following, since the process to start Chrome
 			// opens the addtional window on the main chrome process and then exits immediately
@@ -115,7 +123,6 @@ namespace CourgetteTestAdapter
 
 			// wait for browser to close
 			string result = await cdp.CloseBrowserAsync().ConfigureAwait(false);
-			Log($"CloseAsync(): Cdp.CloseBrowser() returned result {result}");
 		}
 
 	}

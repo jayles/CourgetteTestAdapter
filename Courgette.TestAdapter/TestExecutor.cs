@@ -4,6 +4,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using static CourgetteTestAdapter.Logger;
 
 // DO NOT UPDATE Nuget DEPENDENCIES TO LATEST VERSIONS, IT WILL CAUSE RUNTIME DLL DEPENDENCY ERRORS
@@ -12,7 +13,6 @@ using static CourgetteTestAdapter.Logger;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Adapter;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Logging;
-using System.Text.RegularExpressions;
 
 // note if you are having problems debugging the TestExecutor class (process unexpectedly exits)
 // then ensure you have a .runsettings unit test config file (within the project with the unit tests)
@@ -130,7 +130,6 @@ namespace CourgetteTestAdapter
 
 		private void ProcessTestFileResults(string testFilename, List<TsTestResult> testFileResults, IEnumerable<TestCase> vsTests, IFrameworkHandle frameworkHandle)
 		{
-			//foreach (TestCase vsTestCase in vsTests)
 			foreach (TsTestResult tsTestResult in testFileResults)
 			{
 				if (_cancelled)
@@ -151,7 +150,6 @@ namespace CourgetteTestAdapter
 			}
 		}
 
-		//private async Task<TestResults> GetBrowserResultsAsync(VsHttpServer listener)
 		private async Task<List<TsTestResult>> GetBrowserResultsAsync(VsHttpServer listener)
 		{
 			//Debugger.Break();
@@ -178,49 +176,7 @@ namespace CourgetteTestAdapter
 			return browserResults;
 		}
 
-		//private TestContainer GetTestContainer(string testFilename)
-		//{
-		//	// VS2017 does not seem to provide any linkage from a TestCase to its parent TestContainer object, instead we are just passed an IEnumerable<string> of container filenames
-		//	// use MEF to find our test container, see the following:
-		//	//	https://stackoverflow.com/questions/20649196/receive-test-run-start-finish-with-dte2-interface-in-visual-studio-extension
-		//	//
-
-		//	//Microsoft.VisualStudio.OLE.Interop.IServiceProvider InteropServiceProvider = application as Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
-		//	//serviceProvider = new ServiceProvider(InteropServiceProvider);
-		//	//componentModel = (IComponentModel)serviceProvider.GetService(typeof(SComponentModel));
-		//	//var testsService = componentModel.GetService<Microsoft.VisualStudio.TestWindow.Extensibility.ITestsService>();
-
-		//	//var GetTestTask = testsService.GetTests();
-		//	//GetTestTask.ContinueWith(Task =>
-		//	//{
-		//	//	var discoveredTests = Task.Results.ToList();
-		//	//});
-
-		//	//var componentModel = (IComponentModel)_serviceProvider.GetService(typeof(SComponentModel));
-		//	//var discoService = componentModel.GetService<Microsoft.VisualStudio.TestWindow.Extensibility.ITestContainerDiscoverer>();
-
-		//	//var discoService = componentModel.GetService<Microsoft.VisualStudio.TestWindow.Extensibility.ITestContainerDiscoverer>();
-
-		//	Debugger.Break();
-		//	IServiceProvider servProvider = ServiceProvider;
-		//	ITestContainerDiscoverer discoService1 = servProvider.GetService(typeof(ITestContainerDiscoverer)) as ITestContainerDiscoverer;
-		//	foreach (var container in discoService1.TestContainers)
-		//	{
-		//		if (testFilename == container.Source)
-		//		{
-		//			TestContainer myContainer = container as TestContainer;
-		//			Log($"Found test container: project = {myContainer.ParentProject}, filename = {testFilename}");
-		//			return myContainer;
-		//		}
-		//	}
-
-		//	// not found
-		//	return null;
-		//}
-
-		// Ideally we'd get this infoformation during container discovery phase, but there does not appear to any easy route to this data from ITestExecutor
-		// IServiceProvider MEF DI won't work because we're NOT inside VS2017 at this point (we're in testhost.x86 process)
-		// TestCase class has LocalExtensionData property, but this is always null inside testhost.x86
+		// TODO: Check if this info can be replaced by IRunContext.SolutionDirectory / IRunContext.TestRunDirectory
 		private string GetParentProjectFolder(string fullPathFilename)
 		{
 			string folder = Path.GetDirectoryName(fullPathFilename);
@@ -253,7 +209,7 @@ namespace CourgetteTestAdapter
 		}
 
 		// async test runner, called once for each test container/file
-		private async Task RunTestFileAsync(VsHttpServer listener, string issConfig, string testFilename, IEnumerable<TestCase> selectedTests, IFrameworkHandle frameworkHandle)
+		private async Task RunTestFileAsync(IRunContext runContext, VsHttpServer listener, string issConfig, string testFilename, IEnumerable<TestCase> selectedTests, IFrameworkHandle frameworkHandle)
 		{
 			Log($"Entered RunTestFileAsync(), testFilename={testFilename}");
 
@@ -265,7 +221,7 @@ namespace CourgetteTestAdapter
 			var startTime = DateTime.Now;
 
 			// start browser & run the tests, then get the results back from browser
-			var browser = new Browser(wwwRoot, relativeFilePath);
+			var browser = new Browser(runContext, wwwRoot, relativeFilePath);
 			await browser.LaunchAsync().ConfigureAwait(false);
 			List<TsTestResult> testFileResults = await GetBrowserResultsAsync(listener).ConfigureAwait(false);
 
@@ -310,7 +266,7 @@ namespace CourgetteTestAdapter
 					// Launch all tests asynchronously (should really limit concurrency with a SemaphoreSlim to 16 browsers or so in case someone has 50+ test containers).
 					// Unless there are a large number of long-running tests, it will be faster to use a single browser and fire all the test files at it sequentially
 					// (browser startup and process exit takes a long time, ~6 seconds, executing a page of tests is likely to be < 50-100ms)
-					var tasks = testFilenames.Select(filename => RunTestFileAsync(listener, iisConfig, filename, selectedTests, frameworkHandle));
+					var tasks = testFilenames.Select(filename => RunTestFileAsync(runContext, listener, iisConfig, filename, selectedTests, frameworkHandle));
 
 					// and then thunk back to synchronous world using blocking wait-for-all
 					// we need to block here to ensure all the browsers that were started have been closed

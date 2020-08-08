@@ -11,7 +11,7 @@ namespace CourgetteTestAdapter
 
 		static Logger()
 		{
-			LogPath = Path.GetTempPath() + "courgette\\";
+			LogPath = Path.GetTempPath() + "Courgette\\";
 			LogFilename = LogPath + "courgette.log";
 
 			// create logging dir if it doesn't exist
